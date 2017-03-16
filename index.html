@@ -11,23 +11,39 @@
 	<section id="todoapp">
 		<header id="header">
 			<h1>todos</h1>
-			<input id="new-todo" data-bind="value: title" placeholder="What needs to be done?" autofocus>
+			<input id="new-todo" data-bind="value: current" placeholder="What needs to be done?" autofocus>
 			<button data-bind="click: addTodo">Add</button>
+
 		</header>
-		<section id="main">
-			<input id="toggle-all" type="checkbox">
+		<section data-bind="visible: renderTodos.length>0">
+			<input id="toggle-all" type="checkbox" data-bind="checked: toggleAll">
 			<label for="toggle-all">Mark all as complete</label>
 			<ul id="todo-list"  data-bind="foreach: todos">
-				<li>
+				<li data-bind="attr:{'class': completed()?'completed':''}">
 					<div class="view">
 						<input class="toggle" type="checkbox" data-bind="checked: completed">
 						<label data-bind="text: title"></label>
 						<button class="destroy" data-bind="click: $root.removeTodo"></button>
 					</div>
+					<input class="edit" data-bind="value: title, ">
 				</li>
 			</ul>
 		</section>
-		<footer id="footer"></footer>
+		<footer  data-bind="visible: renderTodos.length>0">
+			<span><strong data-bind="text: activeCount"></strong><span data-bind="text: getText(activeCount)"></span> left</span>
+			<ul id="filters">
+				<li>
+					<a  data-bind="click: renderAllTodos()">All</a>
+				</li>
+				<li>
+					<a  data-bind="click: renderActiveTodos()">Active</a>
+				</li>
+				<li>
+					<a  data-bind="click: renderCompletedTodos()">Completed</a>
+				</li>
+			</ul>
+			<button id="clear-completed" data-bind="visible: comletedCount()>0, click: removeCompleted">Clear completed</button>
+	</footer>
 	</section>
 	<footer id="info">
 		<p>Double-click to edit a todo</p>
