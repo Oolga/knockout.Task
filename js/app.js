@@ -1,33 +1,25 @@
 // JavaScript source code
 function TodoModel(title,completed) {
-	//this.id=ko.computed(function(){
-	//	var i, random;
-	//	var uuid = '';
 
-	//	for (i = 0; i < 32; i++) {
-	//		random = Math.random() * 16 | 0;
-	//		if (i === 8 || i === 12 || i === 16 || i === 20) {
-	//			uuid += '-';
-	//		}
-	//		uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
-	//	}
-
-	//	return uuid;
-	//});
 	this.title = ko.observable(title);
-	this.completed=ko.observable(completed);
+	this.completed = ko.observable(completed);
+
 };
 
 function App() {
 	var self = this;
 
-	//self.todos = ko.observableArray();
 
-	self.renderTodos = ko.observableArray();
+
+	self.filter='all';
 
 	self.todos = ko.observableArray(ko.utils.arrayMap(ko.utils.parseJson(window.localStorage.getItem("todos")), function (todo) {
 		return new TodoModel(todo.title, todo.completed);
 	}));
+
+	self.renderTodos = ko.computed(function () { return self.todos();});
+
+
 
 	self.current = ko.observable();
 
@@ -35,23 +27,28 @@ function App() {
 		return ko.utils.arrayFilter(self.todos(), function (todo) {
 			return todo.completed();
 		}).length;
-	},this);
+	}, this);
 
-	self.completedTodos = ko.computed(function () {
-		return ko.utils.arrayFilter(self.todos(), function (todo) {
-			return todo.completed();
-		})
-	});
+	self.completedTodos = ko.observableArray(ko.utils.arrayMap(self.todos().filter(function (todo) { return todo.completed();}), function (todo) {
+		return new TodoModel(todo.title, todo.completed);
+	}));
 
-	self.activeTodos=ko.computed(function () {
-		return ko.utils.arrayFilter(self.todos(), function (todo) {
-			return !todo.completed();
-		})
-	});
 
+		/* ko.dependentObservable(function () {
+		return ko.utils.arrayFilter(this.todos(), function (item) {
+			return item.completed();
+		});
+	}, this);*/
+
+	self.activeTodos = ko.dependentObservable(function () {
+		return ko.utils.arrayFilter(this.todos(), function (item) {
+			return !item.completed();
+		});
+	}, this);
+	
 	self.activeCount = ko.computed(function () {
-		return self.todos().length-self.comletedCount();
-	},this);
+		return self.todos().length - self.comletedCount();
+	}, this);
 
 	self.getText = function (count) {
 		return ko.utils.unwrapObservable(count) === 1 ? ' item' : ' items';
@@ -59,13 +56,22 @@ function App() {
 
 	self.addTodo = function () {
 		var current = self.current().trim();
+	
+		if (self.filter !== 'completed')
+			self.renderTodos.push(new TodoModel(current, false));
 
-		self.todos.push(new TodoModel(current,false));
+		if (self.filter!=="all")
+		self.todos.push(new TodoModel(current, false));
+		
 		self.current("");
 	};
 
 	self.removeTodo = function (todo) {
-		self.todos.remove(todo);
+		var t = todo;
+
+		self.todos.remove(t);
+		self.renderTodos.remove(t);
+		
 	};
 
 	self.toggleAll = ko.computed({
@@ -86,6 +92,10 @@ function App() {
 		self.todos.remove(function (todo) {
 			return todo.completed();
 		});
+
+		self.renderTodos.remove(function (todo) {
+			return todo.completed();
+		});
 	};
 
 	ko.computed(function () {
@@ -97,18 +107,25 @@ function App() {
 	}); // save at most twice per second
 
 	self.renderActiveTodos = function () {
+
 		self.renderTodos(self.activeTodos());
+
+		self.filter = "active";
 	};
 
 	self.renderCompletedTodos = function () {
-		self.renderTodos ( self.completedTodos());
+
+		self.renderTodos=ko.computed(function(){return self.completedTodos();});
+		self.filter = "completed";
+	
 	};
 
 	self.renderAllTodos = function () {
-		self.renderTodos =self.todos();
+		
+		self.renderTodos(self.todos());
+		self.filter = "all";
 	};
 
-	self.renderAllTodos();
-};
 
+}
 ko.applyBindings(new App());
